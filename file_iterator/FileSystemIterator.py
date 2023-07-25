@@ -20,7 +20,7 @@ class FileSystemIterator:
         return self
 
 
-    def __next__(self) -> str:
+    def __next__(self) -> pathlib.Path:
         return next(self.__generator)
     
 
