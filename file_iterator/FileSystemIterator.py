@@ -1,36 +1,44 @@
 import os
+import pathlib
 import re
+from typing import Generator, Any
 
 class FileSystemIterator:
+
     
     def __init__(self, root: str = "./", only_files: bool = False, only_dirs: bool = False, pattern: str = None) -> None:
+        if not os.path.exists(root):
+            raise FileNotFoundError
         self.__root = root
         self.__only_files = only_files
         self.__only_dirs = only_dirs
         self.__pattern = pattern
+        self.__generator = self.__get_generator()
 
 
-    def __iter__(self) -> str:
-        if self.__only_files:
-            dir = next(os.walk(self.__root))
-            for file in dir[2]:
-                if not self.__pattern is None and re.search(self.__pattern, file) is None:
-                    continue
-                yield os.path.join(dir[0], file)
-        else:
-            for root, dirs, files in os.walk(self.__root):
-                if self.__only_dirs:
-                    for dir in dirs:
-                        if not self.__pattern is None and re.search(self.__pattern, dir) is None:
-                            continue
-                        yield os.path.join(root, dir)
-                else:
-                    for file in files:
-                        if not self.__pattern is None and re.search(self.__pattern, file) is None:
-                            continue
-                        yield os.path.join(root, file)
-    
+    def __iter__(self) -> 'FileSystemIterator':
+        return self
+
 
     def __next__(self) -> str:
-        return next(iter(self))
+        return next(self.__generator)
     
+
+    def __get_iteration(self, root: str, gen: Generator[pathlib.Path, Any, None]):
+        for f in gen:
+            if not self.__pattern is None and re.search(self.__pattern, f) is None:
+                continue
+            yield pathlib.Path(root) / pathlib.Path(f)
+
+
+    def __get_generator(self):
+        for root, dirs, files in os.walk(self.__root):
+            if self.__only_files and self.__only_dirs:
+                raise ValueError
+            if self.__only_files:
+                yield from self.__get_iteration(root=root, gen=[file for file in files])
+            elif self.__only_dirs:
+                yield from self.__get_iteration(root=root, gen=[dir for dir in dirs])
+            else:
+                yield from self.__get_iteration(root=root, gen=[dir for dir in dirs])
+                yield from self.__get_iteration(root=root, gen=[file for file in files])
