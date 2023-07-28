@@ -24,7 +24,7 @@ class FileSystemIterator:
         return next(self.__generator)
     
 
-    def __get_iteration(self, root: str, gen: Generator[pathlib.Path, Any, None]):
+    def __get_iteration(self, root: str, gen):
         for f in gen:
             if not self.__pattern is None and re.search(self.__pattern, f) is None:
                 continue
@@ -36,9 +36,9 @@ class FileSystemIterator:
             if self.__only_files and self.__only_dirs:
                 raise ValueError
             if self.__only_files:
-                yield from self.__get_iteration(root=root, gen=[file for file in files])
+                yield from self.__get_iteration(root=root, gen=files)
             elif self.__only_dirs:
-                yield from self.__get_iteration(root=root, gen=[dir for dir in dirs])
+                yield from self.__get_iteration(root=root, gen=dirs)
             else:
-                yield from self.__get_iteration(root=root, gen=[dir for dir in dirs])
-                yield from self.__get_iteration(root=root, gen=[file for file in files])
+                yield from self.__get_iteration(root=root, gen=dirs)
+                yield from self.__get_iteration(root=root, gen=files)
